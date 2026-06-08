@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Квест-бук Гомельщины</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@500;700;800&family=Russo+One&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Базовые настройки */
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #2c3e50;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            counter-reset: page-counter; 
+        }
+
+        /* Настройки печати А5 */
+        @page {
+            size: 148mm 210mm;
+            margin: 0;
+        }
+
+        /* Страница квест-бука */
+        .page {
+            width: 148mm;
+            height: 210mm;
+            background-color: #fdfaf4;
+            background-image: radial-gradient(#d5d0c4 1.5px, transparent 1.5px);
+            background-size: 15px 15px;
+            box-sizing: border-box;
+            padding: 15mm;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            overflow: hidden;
+            page-break-after: always;
+        }
+
+        /* Автоматическая нумерация страниц */
+        .page.numbered::after {
+            counter-increment: page-counter;
+            content: "- " counter(page-counter) " -";
+            position: absolute;
+            bottom: 12mm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 12px;
+            color: #a8a49c;
+        }
+
+        @media print {
+            body { background-color: transparent; padding: 0; }
+            .page { margin: 0; box-shadow: none; }
+        }
+
+        /* Боковая линия (Флаг Беларуси) */
+        .flag-border {
+            position: absolute;
+            top: 0; left: 0; bottom: 0; width: 6mm;
+            background: linear-gradient(to right, #d22730 0%, #d22730 66%, #3b7a45 66%, #3b7a45 100%);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
+        
+        /* Контейнер контента */
+        .content { margin-left: 6mm; height: 100%; display: flex; flex-direction: column; position: relative; z-index: 2; }
+
+        /* Типографика */
+        h1 { font-family: 'Russo One', sans-serif; color: #d22730; font-size: 32px; text-transform: uppercase; text-align: center; line-height: 1.1; margin-top: 10px; text-shadow: 2px 2px 0px rgba(0,0,0,0.05); }
+        h2 { font-family: 'Russo One', sans-serif; color: #3b7a45; font-size: 22px; margin-bottom: 15px; border-bottom: 2px solid #3b7a45; padding-bottom: 5px; }
+        p { color: #2b2b2b; font-size: 12px; line-height: 1.5; text-align: justify; margin-top: 0; }
+
+        /* Полароидное фото */
+        .polaroid {
+            background: #fff;
+            padding: 8px 8px 25px 8px;
+            box-shadow: 3px 4px 10px rgba(0,0,0,0.15);
+            border-radius: 2px;
+            position: relative;
+            transform: rotate(-2deg);
+            margin: 15px auto;
+            border: 1px solid #eaeaea;
+            width: fit-content;
+        }
+        .polaroid::before {
+            content: ""; position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(3deg);
+            width: 40px; height: 15px; background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 1px 2px rgba(0,0,0,0.05); z-index: 3;
+        }
+        .polaroid.right { transform: rotate(3deg); }
+        
+        /* Изображения внутри полароида */
+        .polaroid img {
+            display: block;
+            object-fit: cover;
+            border-radius: 2px;
+            background-color: #e2dfd8; /* заглушка, пока фото не прогрузится */
+        }
+
+        /* Заметки-задания */
+        .quest-note {
+            background-color: #fffae6;
+            border-left: 5px solid #ffcc00;
+            padding: 12px 15px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            margin-top: auto;
+            margin-bottom: 10px; 
+        }
+        .quest-note h3 {
+            font-family: 'Caveat', cursive;
+            color: #d22730; font-size: 24px; margin: 0 0 5px 0; letter-spacing: 1px;
+        }
+        .quest-note p { font-family: 'Caveat', cursive; font-size: 16px; color: #333; line-height: 1.2; margin-bottom: 5px; text-align: left; }
+        .meta-hint { font-size: 11px; color: #555; font-style: italic; margin-top: 8px; text-align: left; font-family: 'Montserrat', sans-serif;}
+        
+        .hand-line { border-bottom: 2px dashed #999; height: 22px; width: 100%; margin-top: 5px; }
+
+        /* Пин локации */
+        .map-pin {
+            display: inline-flex; align-items: center; gap: 8px; background: #fff; padding: 6px 12px;
+            border-radius: 20px; border: 2px solid #3b7a45; margin-bottom: 10px; font-size: 11px; font-weight: bold; color: #3b7a45;
+        }
+
+        /* Оглавление */
+        .toc-item { display: flex; align-items: flex-end; margin-bottom: 15px; font-size: 13px; font-weight: 700; color: #2b2b2b; }
+        .toc-item .title { background-color: #fdfaf4; padding-right: 5px; z-index: 2; }
+        .toc-item .dots { flex-grow: 1; border-bottom: 2px dotted #a8a49c; position: relative; top: -4px; margin: 0 5px; }
+        .toc-item .page-num { background-color: #fdfaf4; padding-left: 5px; color: #d22730; font-family: 'Russo One', sans-serif; font-size: 16px; z-index: 2; }
+
+        /* Стили для Мета-загадки */
+        .puzzle-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+        .puzzle-item { display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 6px 10px; border-radius: 6px; box-shadow: 1px 2px 4px rgba(0,0,0,0.05); border: 1px solid #eaeaea; font-size: 11px; font-weight: 700; color: #2b2b2b; }
+        .letter-box { width: 24px; height: 24px; border: 2px dashed #3b7a45; border-radius: 4px; background: #fdfaf4; }
+        
+        .final-word-container { display: flex; justify-content: center; gap: 4px; margin: 15px 0; flex-wrap: wrap; }
+        .final-letter-cell { width: 26px; height: 34px; border: 2px solid #d22730; background: #fff; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 2px 2px 4px rgba(0,0,0,0.08); position: relative; }
+        .cell-num { font-size: 8px; color: #a8a49c; position: absolute; bottom: 2px; font-weight: 800; }
+
+        /* Авторы */
+        .authors-container { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+        
+        /* Задняя обложка */
+        .back-cover { background-color: #3b7a45; background-image: none; color: white; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; padding: 20mm; border: 10px solid #285530; }
+        .qr-placeholder { width: 40mm; height: 40mm; background: #fff; border: 4px solid #fff; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; margin: 20px auto; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); overflow: hidden; padding: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="page cover" style="background-color: #fff; background-image: none; border: 10px solid #d22730;">
+        <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <p style="font-family: 'Caveat', cursive; font-size: 28px; color: #3b7a45; margin: 0; text-align: center;">Твой личный дневник</p>
+            <h1>ТАЙНЫ<br>ГОМЕЛЬЩИНЫ</h1>
+            
+            <div class="polaroid" style="width: 100mm;">
+                <img src="first_photo.jpg" alt="Обложка" style="width: 100%; height: 80mm;">
+            </div>
+            
+            <div style="background: #3b7a45; color: white; width: 85%; padding: 15px; border-radius: 10px; margin-top: 20px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(59, 122, 69, 0.3);">
+                <p style="color: white; font-size: 18px; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Квест-бук исследователя</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>КАК ИГРАТЬ?</h2>
+            <p>Этот дневник попал к тебе не просто так. В нем зашифрован уникальный маршрут по самым интересным, мистическим и красивым точкам нашей области.</p>
+            
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="second_photo.jpg" alt="Инструкция" style="width: 100%; height: 75mm;">
+            </div>
+            
+            <div class="quest-note">
+                <h3>Твоя задача:</h3>
+                <p>1. Двигайся по локациям области.<br>
+                   2. Ищи подсказки на зданиях и табличках.<br>
+                   3. Вписывай найденные ответы в книгу.<br>
+                   <b>4. ВАЖНО:</b> В каждой загадке указано, какую по счету букву из ответа нужно запомнить. Выписывай их — они понадобятся для расшифровки Главной Тайны в конце книги!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>МАРШРУТ</h2>
+            <p>Перед тобой пустая карта нашей области. Соединяй точки маршрута линией по мере прохождения городов, чтобы в конце увидеть весь свой гигантский пройденный путь.</p>
+            
+            <div class="polaroid" style="width: 100%; box-sizing: border-box; padding: 10px; margin-top: 20px;">
+                <img src="dots_map.jpg" alt="Карта маршрута" style="width: 100%; height: 100mm;">
+            </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>1. ДВОРЕЦ НА СОЖЕ</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="1.jpg" alt="Дворец Румянцевых и Паскевичей" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Стартуем в самом центре! Этот дворец — свидетель великих эпох. Екатерина II подарила эти земли фельдмаршалу Румянцеву «для увеселения». Позже его выкупил другой знаменитый полководец. Вокруг разбит роскошный парк. Говорят, от подвалов дворца на другой берег реки ведет мрачный тайный тоннель. Почувствуй себя настоящим аристократом, гуляя по этим старинным аллеям.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 г. Гомель, пл. Ленина, 4.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="1p.jpg" alt="Карта Дворца" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Фамилия второго знаменитого владельца дворца (полководца), который собрал здесь уникальную коллекцию мирового искусства.</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ (фамилию) и перенеси <b>3-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>2. БЕЛОРУССКАЯ ВЕНЕЦИЯ</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="2.jpg" alt="Добрушская бумажная фабрика" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Город Добруш пронизан каналами и мостами. В конце XIX века здесь было построено грандиозное бумагоделательное предприятие. Мощные корпуса из красного кирпича выглядят словно декорации к мрачному историческому фильму! Именно отсюда качественный писчий материал разлетался по всей огромной империи. Фабрика бесперебойно работает и удивляет своей архитектурой до сих пор.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 г. Добруш, пр-т Луначарского, 7.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="2p.jpg" alt="Карта Фабрики" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>В каком архитектурном стиле (одно слово) с обилием массивного красного кирпича выстроены старые исторические корпуса этой фабрики?</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ и перенеси <b>8-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>3. ПОРТАЛ В ПРОШЛОЕ</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="3.jpg" alt="Ветковский музей" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Город Ветка был тайно основан беглыми староверами, искавшими убежище в непроходимых лесах. Местный музей — это настоящая машина времени. Здесь хранятся рукописные фолианты, покрытые чистым золотом, и знаменитые неглюбские рушники. Ткачихи веками зашифровывали в их сложных красных узорах древние обереги от злых духов. Это место буквально дышит мистикой старинных ритуалов.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 г. Ветка, Красная площадь, 5.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="3p.jpg" alt="Карта Музея" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Священное живописное изображение, уникальную школу написания которых (украшая бисером и жемчугом) сохранили в Ветке.</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ и перенеси <b>5-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>4. ТАЙНЫ МАСОНОВ</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="4.jpg" alt="Усадьба в Хальче" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">На крутом берегу реки Сож дремлет старинный, опустевший дворец Войнич-Сеножецких. В XIX веке здесь кипела жизнь и гремели роскошные светские балы. Но самое интересное было скрыто от посторонних глаз: по местным преданиям, в глубоких, темных подвалах этой усадьбы тайно собиралась масонская ложа и хранилась огромная, строго запрещенная библиотека!</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 д. Хальч, ул. Завьялова.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="4p.jpg" alt="Карта Усадьбы Хальч" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Архитектурный стиль конца 18-го века (строгие линии, колонны), к которому относится величественное здание дворца в Хальче.</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ и перенеси <b>9-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>5. ДЕРЕВЯННЫЙ КАМЕНЬ</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="5.jpg" alt="Чечерская ратуша" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Перед тобой одна из самых необычных и удивительных построек страны. На первый взгляд кажется, что это крепкое, массивное административное здание с несколькими башнями. Но это архитектурная иллюзия! Ратуша выстроена совсем из другого материала, но благодаря хитрости зодчих мастерски имитирует камень. А с каждой из четырех сторон здание выглядит совершенно по-разному.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 г. Чечерск, ул. Ленина, 4.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="5p.jpg" alt="Карта Чечерска" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Уникальность этой ратуши в её конструкции. Из какого природного материала на самом деле полностью возведено это здание?</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ и перенеси <b>6-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>6. СКАЗОЧНЫЙ ЗАМОК</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="6.jpg" alt="Усадьба Козелл-Поклевских" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Настоящий дворец с привидением, спрятанный в тени старого английского парка! В архитектуре этой роскошной усадьбы смешались почти все известные стили — от неоготики до восточных арабских мотивов. Стены выложены из ярких блоков, а водостоки охраняют химеры. Местные жители поговаривают, что по вечерам в пустых аллеях парка появляется неупокоенный призрак молодой пани.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 аг. Красный Берег, ул. Л.В. Исаева, 14.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="6p.jpg" alt="Карта Красный Берег" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Главный тяжелый строительный материал красного цвета, из которого выстроены массивные стены этого удивительного сказочного дворца.</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ и перенеси <b>6-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>7. СРЕДНЕВЕКОВЬЕ НА ГОРЕ</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="7.jpg" alt="Мозырский замок" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Мозырь поражает своими гигантскими перепадами высот — это настоящая «Белорусская Швейцария». На исторической Замковой горе когда-то грозно возвышалась древняя деревянная крепость, полностью сгоревшая при долгой осаде. Сегодня на этом холме мастерски воссоздана атмосфера сурового средневековья. С высоких смотровых башен открывается гипнотический, бескрайний вид на реку Припять.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 г. Мозырь, ул. Гора Коммунаров, 8.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="7p.jpg" alt="Карта Мозыря" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Крупный, очищенный от веток ствол дерева, из множества которых мощно сложены стены и башни этого реконструированного замка.</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ и перенеси <b>5-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>8. РАСТУЩИЕ ИЗ ЗЕМЛИ</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="8.jpg" alt="Растущие кресты Турова" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Один из самых древних городов славян, окутанный плотным туманом мифов. Главная загадка Турова — таинственные тяжелые каменные святыни. Предание гласит, что после крещения Руси они сами приплыли сюда из Киева прямо против течения! Сегодня один из таких чудесных валунов необъяснимым образом буквально «растет» из земли на старом Борисо-Глебском кладбище, собирая сотни паломников.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 г. Туров, Борисо-Глебское кладбище.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="8p.jpg" alt="Карта Турова" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Как называются эти тяжелые каменные религиозные символы, которые, по местному поверью, обладают чудодейственной силой и «растут» из земли?</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ во множественном числе и перенеси <b>6-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>9. ЭПОХА МАМОНТОВ</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="9.jpg" alt="Стоянка первобытного человека" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Спускаемся в невероятную глубину веков! На высоком склоне холма в Юровичах археологи раскопали самую древнюю стоянку первобытных людей в нашей стране. Ей около 26 тысяч лет! Древние кроманьонцы выживали здесь в суровых условиях ледникового периода. Они охотились на настоящих мохнатых мамонтов и сооружали из их огромных бивней и костей надежные убежища от свирепых хищников.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 аг. Юровичи, Юровичский сельсовет, 28.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="9p.jpg" alt="Карта Юровичей" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Как называется культурное учреждение, которое сейчас специально создано на месте археологических раскопок для сохранения и показа находок туристам?</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ и перенеси <b>5-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>10. КИПЯЩАЯ ВОДА</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="10.jpg" alt="Музей битвы за Днепр" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Город-герой на живописном обрыве. В 1943 году именно здесь развернулась одна из самых масштабных и страшных переправ в истории Великой Отечественной войны. Воды реки буквально кипели от непрерывных взрывов артиллерии, а тысячи бойцов отдали свои жизни за взятие этого берега. Сегодня прямо на этом месте под открытым небом застыла настоящая боевая техника тех лет.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 г.п. Лоев, ул. Советская, 3.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="10p.jpg" alt="Карта Лоева" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Воинское звание или просто название рядового бойца, тысячи которых проявили героизм при смертельно опасной переправе через реку под Лоевом.</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ и перенеси <b>1-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>11. СВЯТОЕ ВОЗВРАЩЕНИЕ</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="11.jpg" alt="Каплица в Речице" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Древняя Речица бережно хранит память о важнейшем духовном событии. В 1910 году здесь, на высоком живописном берегу реки Днепр, делала историческую остановку флотилия, перевозившая мощи святой покровительницы Беларуси. В честь этого грандиозного события спустя десятилетия была возведена невероятной красоты металлическая постройка, словно сотканная из невесомого кружева.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 г. Речица, ул. Набережная.</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="11p.jpg" alt="Карта Речицы" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Имя знаменитой белорусской святой и просветительницы, в честь исторической остановки мощей которой возведена эта каплица (впиши только имя).</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ и перенеси <b>5-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>12. ИСТОКИ МАРШРУТА</h2>
+            <div class="polaroid" style="width: 105mm;">
+                <img src="12.jpg" alt="Памятник Лодочнику" style="width: 100%; height: 85mm;">
+            </div>
+            <p style="margin-top: 15px; font-size: 13px;">Финиш! Наша огромная петля замкнулась. Перед тобой памятник первому жителю — суровому охотнику с колчаном стрел и ручной рысью. По легенде, он приплыл сюда на лодке и основал поселение у слияния рек. Посмотри на темную воду: она помнит старинные варяжские ладьи и мощные княжеские флотилии. Это идеальное место, чтобы с гордостью осознать масштаб вашего пройденного пути.</p>
+        </div>
+    </div>
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <div style="margin-top: 10px;"><div class="map-pin">📍 г. Гомель, Киевский спуск (Набережная).</div></div>
+            <div class="polaroid right" style="width: 105mm;">
+                <img src="12p.jpg" alt="Карта Набережной Гомеля" style="width: 100%; height: 75mm;">
+            </div>
+            <div class="quest-note" style="margin-top: auto;">
+                <h3>Задание:</h3>
+                <p>Как называется крупная полноводная река, на красивейшей набережной которой стоит этот памятник и по которой приплыл тот самый первопоселенец?</p>
+                <div class="hand-line"></div>
+                <p class="meta-hint">▶ Запиши ответ и перенеси <b>3-ю букву</b> в финал.</p> </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>ГЛАВНАЯ ТАЙНА</h2>
+            <p>Ты проделал колоссальный путь по всей области и разгадал тайны всех 12 локаций. Но это еще не финал! Пришло время объединить собранные тобой ключи-буквы.</p>
+            
+            <p style="font-style: italic; color: #555; margin-bottom: 5px;">Вернись к своим ответам на страницах квеста. Перенеси нужные буквы из разгаданных слов в ячейки ниже:</p>
+            
+            <div class="puzzle-grid">
+                <div class="puzzle-item"><span>Локация 1 (буква 3)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 2 (буква 8)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 3 (буква 5)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 4 (буква 9)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 5 (буква 6)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 6 (буква 6)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 7 (буква 5)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 8 (буква 6)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 9 (буква 5)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 10 (буква 1)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 11 (буква 5)</span><div class="letter-box"></div></div>
+                <div class="puzzle-item"><span>Локация 12 (буква 3)</span><div class="letter-box"></div></div>
+            </div>
+
+            <div class="quest-note" style="margin-top: auto; background-color: #f4f9f4; border-left-color: #3b7a45;">
+                <h3 style="color: #3b7a45; font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: bold; text-transform: uppercase;">Почти готово!</h3>
+                <p style="font-size: 15px;">Переверни страницу, впиши собранные буквы в финальную матрицу по порядку и сорви занавес тайны!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content" style="align-items: center; text-align: center;">
+            <h2>КОДОВОЕ СЛОВО</h2>
+            <p style="text-align: center;">Впиши сюда буквы в соответствии с номерами локаций и узнай главную фразу квеста!</p>
+            
+            <div class="final-word-container">
+                <div class="final-letter-cell"><span class="cell-num">1</span></div>
+                <div class="final-letter-cell"><span class="cell-num">2</span></div>
+                <div class="final-letter-cell"><span class="cell-num">3</span></div>
+                <div class="final-letter-cell"><span class="cell-num">4</span></div>
+                <div class="final-letter-cell"><span class="cell-num">5</span></div>
+                <div class="final-letter-cell"><span class="cell-num">6</span></div>
+                <div class="final-letter-cell"><span class="cell-num">7</span></div>
+                <div class="final-letter-cell"><span class="cell-num">8</span></div>
+                <div class="final-letter-cell"><span class="cell-num">9</span></div>
+                <div class="final-letter-cell"><span class="cell-num">10</span></div>
+                <div class="final-letter-cell"><span class="cell-num">11</span></div>
+                <div class="final-letter-cell"><span class="cell-num">12</span></div>
+            </div>
+
+            <p style="font-family: 'Caveat', cursive; font-size: 22px; color: #d22730; margin: 5px 0;">Ура! Экспедиция успешно завершена!</p>
+
+            <div class="polaroid right" style="width: 95mm; margin: 10px auto;">
+                <div class="placeholder-img" style="height: 55mm; font-size: 11px;">МЕСТО ДЛЯ ТВОЕЙ ПОБЕДНОЙ ФОТОГРАФИИ</div>
+            </div>
+
+            <p style="font-size: 11px; color: #666; font-style: italic; line-height: 1.3; margin-top: auto;">Сохрани этот дневник на память. Он — железное доказательство того, что ты настоящий путешественник-исследователь!</p>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content" style="align-items: center; justify-content: flex-start; text-align: center;">
+            <h2 style="width: 100%;">АВТОРЫ МАРШРУТА</h2>
+            
+            <div class="authors-container">
+                <div class="polaroid" style="width: 45mm; transform: rotate(-4deg); margin: 0;">
+                    <img src="tim.jpg" alt="Тимофей" style="width: 100%; height: 45mm;">
+                </div>
+                <div class="polaroid" style="width: 45mm; transform: rotate(3deg); margin: 0;">
+                    <img src="kate.jpg" alt="Екатерина" style="width: 100%; height: 45mm;">
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <h1 style="font-size: 20px; color: #3b7a45; margin: 0; line-height: 1.2;">Тимофей Буйневич<br>& Екатерина Козловская</h1>
+                <p style="font-size: 11px; font-weight: bold; margin-top: 10px; color: #d22730; text-transform: uppercase;">Гомельский торгово-экономический колледж</p>
+                <p style="font-size: 11px; margin-top: 5px; font-style: italic;">Проект создан для конкурса<br>«Па Гомельшчыне – ЦІКАВА»</p>
+            </div>
+            
+            <div class="quest-note" style="width: 100%; box-sizing: border-box; margin-top: auto;">
+                <h3>Мои впечатления:</h3>
+                <div class="hand-line"></div>
+                <div class="hand-line"></div>
+                <div class="hand-line"></div>
+                <div class="hand-line"></div>
+                <div class="hand-line"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page numbered">
+        <div class="flag-border"></div>
+        <div class="content">
+            <h2>СОДЕРЖАНИЕ</h2>
+            
+            <div style="margin-top: 10px;">
+                <div class="toc-item"><span class="title">Как играть?</span><span class="dots"></span><span class="page-num">02</span></div>
+                <div class="toc-item"><span class="title">Общая карта маршрута</span><span class="dots"></span><span class="page-num">03</span></div>
+                <div class="toc-item"><span class="title">Локации квеста (1–12)</span><span class="dots"></span><span class="page-num">04</span></div>
+                <div class="toc-item"><span class="title">Главная тайна (Сбор ключей)</span><span class="dots"></span><span class="page-num">28</span></div>
+                <div class="toc-item"><span class="title">Кодовое слово</span><span class="dots"></span><span class="page-num">29</span></div>
+                <div class="toc-item"><span class="title">Авторы маршрута</span><span class="dots"></span><span class="page-num">30</span></div>
+                <div class="toc-item"><span class="title">Содержание</span><span class="dots"></span><span class="page-num">31</span></div>
+            </div>
+
+            <div class="quest-note" style="margin-top: auto; background-color: #e7f3e8; border-left-color: #3b7a45;">
+                <h3 style="color: #3b7a45;">Подсказка:</h3>
+                <p>Проходи локации по порядку или выбирай свой собственный путь. Главное — ничего не упустить!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="page back-cover">
+        <div style="width: 100%;">
+            <p style="font-family: 'Caveat', cursive; font-size: 34px; color: #ffd966; margin-bottom: 5px;">Гомельщина.</p>
+            <h2 style="color: #fff; font-size: 28px; line-height: 1.2; border: none; margin: 0;">ИСТОРИЯ В КАЖДОМ ШАГЕ.</h2>
+            <p style="color: #e7f3e8; font-size: 16px; font-weight: bold; letter-spacing: 2px; margin-top: 5px;">РАЗГАДАЙ ЕЁ.</p>
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
+        </div>
+        
+        <div>
+            <p style="color: #fdfaf4; font-size: 12px; margin: 0 10px;">Отсканируй QR-код, чтобы открыть интерактивный маршрут в Яндекс.Картах и точно не сбиться с пути!</p>
+            <div class="qr-placeholder">
+                <img src="qr_marsh.jpg" alt="QR Код" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+        </div>
+
+        <div style="width: 100%;">
+            <p style="color: rgba(255,255,255,0.5); font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Гомель, 2026<br>Не для коммерческого использования</p>
+        </div>
+    </div>
+
+</body>
+</html>
